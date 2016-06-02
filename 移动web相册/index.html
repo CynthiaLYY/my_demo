@@ -23,13 +23,25 @@
 			float: left;
 			overflow: hidden;
 		}
+		.large{
+			width:100%;
+			height:100%;
+			position: absolute;
+			top: 0;
+			left: 0;
+			background-color: black;
+		}
 	</style>
 </head>
 <body>
 	<ul class="img-container" id="container">
 	</ul>
+	<div class="large animated fadeIn" style="display:none;" id="large_container">
+		<img id="large_img">
+	</div>
 	<script src="zepto.min.js"></script>
 	<script>
+		var cid = 0;
 		var total = 17;
 		var zWin = $(window);
 		var render = function(){
@@ -38,19 +50,22 @@
 			var picWidth = Math.floor(winWidth - padding*3)/4;
 			var tmpl = '';
 			for(var i = 1; i <= total; i++){
-				var p = padding;
+				var p = 2;
 				var imgSrc = 'img/' + i + '.jpg';
 				if(i%4 == 1){
 					p = 0;
 				}
-				tmpl += '<li style="width:' + picWidth + 'px; height:' +  picWidth + 'px; padding-top:' +  padding + 'px; padding-left:' +  p + 'px;"><canvas id="cvs_' + i + '"></canvas></li>';
+				
+				tmpl += '<li data-id="'+ i +'" class="animated bounceIn" style="width:' + picWidth + 'px; height:' +  picWidth + 'px; padding-top:' +  padding + 'px; padding-left:' +  p + 'px;"><canvas id="cvs_' + i + '"></canvas></li>';
+
 				var imageObj = new Image();
 				imageObj.index = i;
 				imageObj.onload = function(){
-					var cvs = $('#vrs_' + this.index)[0].getContext('2d');
-					cvs.width = this.width;
-					cvs.height = this.height;
-					cvs.drawImage(this, 0, 0);
+					var cvs = $('#cvs_' + this.index)[0];
+					var cvsCnt = cvs.getContext('2d');
+					cvs.width = picWidth;
+					cvs.height = picWidth;
+					cvsCnt.drawImage(this, 0, 0);
 				};
 				imageObj.src = imgSrc;
 			}
@@ -58,7 +73,89 @@
 			$('#container').html(tmpl);
 		};
 
+		var wImage = $('#large_img');
+		var domImage = wImage[0];
+
+		var loadImg = function(id, callback){
+			$('#large_container').css({
+				"width": zWin.width() + 'px',
+				"height": zWin.height() + 'px'
+			}).show();
+
+			var imgsrc = 'img/' + id + '.large.jpg';
+			var imageObj = new Image();
+			imageObj.onload = function(){
+				var w = this.width;
+				var h = this.height;
+				var winWidth = zWin.width();
+				var winHeight = zWin.height();
+				var realw = Math.floor(winHeight * w / h);
+				var realh = Math.floor(winWidth * h / w);
+				var paddingLeft = Math.floor((winWidth - realw) / 2);
+				var paddingTop = Math.floor((winHeight - realh) / 2);
+
+				if(h / w > winHeight / winWidth){
+					wImage.attr('src', imgsrc).css({
+						"height": winHeight + 'px',
+						"width": realw + 'px',
+						"padding-left": paddingLeft + 'px',
+						"padding-top": 0
+					});
+				}else{
+					wImage.attr('src', imgsrc).css({
+						"height": realh + 'px',
+						"width": winWidth + 'px',
+						"padding-top": paddingTop + 'px',
+						"padding-left": 0
+					});
+				}
+
+				if(callback){
+					callback();
+				}
+			
+				imageObj.src = '';
+			};
+			console.log(imgsrc);
+			imageObj.src = imgsrc;
+			
+		};
+
 		render();
+
+		$('#container').delegate('li', 'tap', function(){
+			var _id = $(this).attr('data-id');
+			cid = _id;
+			loadImg(_id);
+		});
+
+		$('#large_container').tap(function(){
+			$(this).hide();
+		}).swipeLeft(function(){
+			++cid;
+			if(cid > total){
+				cid = total;
+			}else{
+				loadImg(cid, function(){
+					domImage.addEventListener('webkitAnimationEnd', function(){
+						wImage.removeClass('annimated bounceInRight');
+					}, false);
+					wImage.addClass('animated bounceInRight');
+				});
+			}
+		}).swipeRight(function(){
+			--cid;
+			if(cid < 1){
+				cid = 1;
+			}else{
+				loadImg(cid, function(){
+					domImage.addEventListener('webkitAnimationEnd', function(){
+						wImage.removeClass('annimated bounceInLeft');
+					}, false);
+					wImage.addClass('animated bounceInLeft');
+				});
+			}	
+		});
 	</script>	
 </body>
 </html>
