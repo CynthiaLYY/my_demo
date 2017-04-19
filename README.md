@@ -1,2 +1,2 @@
-# my_demo
+# Web Album
 移动web相册
